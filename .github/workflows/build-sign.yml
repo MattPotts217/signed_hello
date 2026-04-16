@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+env:
+  IMAGE_NAME: ghcr.io/CSC468-WCU/signed_hello
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,16 +27,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      - name: Derive image name and build metadata
+      - name: Derive build metadata
         id: prep
         shell: bash
         run: |
-          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            VERSION="${GITHUB_REF_NAME#v}"
           else
-            echo "version=0.1.0-dev" >> "$GITHUB_OUTPUT"
+            VERSION="0.1.0-dev"
           fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "revision=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
@@ -52,18 +56,27 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.prep.outputs.image }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=tag
+            type=match,pattern=v(.*),group=1
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=signed_hello
             org.opencontainers.image.description=Minimal C hello-world container with OCI metadata, SBOM, provenance, and keyless Sigstore signing
             org.opencontainers.image.vendor=West Chester University demo
             org.opencontainers.image.licenses=MIT
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Show resolved tags
+        run: |
+          echo "Resolved tags:"
+          echo "${{ steps.meta.outputs.tags }}"
 
       - name: Build image
         id: build
@@ -85,13 +98,11 @@ jobs:
       - name: Install Cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v4.1.1
-        with:
-          cosign-release: v3.0.6
 
       - name: Sign image digest with Cosign (keyless)
         if: github.event_name != 'pull_request'
         env:
-          IMAGE: ${{ steps.prep.outputs.image }}
+          IMAGE: ${{ env.IMAGE_NAME }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           cosign sign --yes "${IMAGE}@${DIGEST}"
@@ -99,7 +110,7 @@ jobs:
       - name: Verify signature in CI
         if: github.event_name != 'pull_request'
         env:
-          IMAGE: ${{ steps.prep.outputs.image }}
+          IMAGE: ${{ env.IMAGE_NAME }}
           DIGEST: ${{ steps.build.outputs.digest }}
           CERT_IDENTITY: ${{ github.server_url }}/${{ github.repository }}/.github/workflows/build-sign.yml@${{ github.ref }}
         run: |
