@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: ghcr.io/csc468-wcu/signed_hello
+  IMAGE_NAME: ghcr.io/MattPotts217/signed_hello
 
 jobs:
   build:
