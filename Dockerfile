@@ -21,5 +21,7 @@ LABEL org.opencontainers.image.title="signed_hello" \
       org.opencontainers.image.vendor="West Chester University demo" \
       org.opencontainers.image.source="https://github.com/REPLACE_ME/REPLACE_ME"
 
+COPY --from=build /hello /hello
+
 USER 65532:65532
 ENTRYPOINT ["/hello"]
