@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.title="signed_hello" \
       org.opencontainers.image.created="${CREATED}" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.vendor="West Chester University demo" \
-      org.opencontainers.image.source="https://github.com/REPLACE_ME/REPLACE_ME"
+      org.opencontainers.image.source="https://github.com/CSC468-WCU/signed_hello"
 
 COPY --from=build /out/hello /hello
 
