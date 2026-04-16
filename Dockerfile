@@ -4,7 +4,7 @@ FROM alpine:${ALPINE_VERSION} AS build
 RUN apk add --no-cache build-base
 WORKDIR /src
 COPY hello.c .
-mkdir -p /out
+RUN mkdir -p /out
 RUN gcc -static -Os -s -o /out/hello hello.c
 
 FROM scratch
