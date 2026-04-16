@@ -4,7 +4,8 @@ FROM alpine:${ALPINE_VERSION} AS build
 RUN apk add --no-cache build-base
 WORKDIR /src
 COPY hello.c .
-RUN gcc -static -Os -s -o hello hello.c
+mkdir -p /out
+RUN gcc -static -Os -s -o /out/hello hello.c
 
 FROM scratch
 
@@ -21,7 +22,7 @@ LABEL org.opencontainers.image.title="signed_hello" \
       org.opencontainers.image.vendor="West Chester University demo" \
       org.opencontainers.image.source="https://github.com/REPLACE_ME/REPLACE_ME"
 
-COPY --from=build /hello /hello
+COPY --from=build /out/hello /hello
 
 USER 65532:65532
 ENTRYPOINT ["/hello"]
